@@ -2,8 +2,9 @@ from flask import Flask, request, jsonify
 from langchain.llms import OpenAI
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-from langchain.retrievers import SQLRetriever
+from langchain_experimental.sql import SQLDatabaseChain
 from langchain.agents import initialize_agent, Tool
+from langchain.utilities import SQLDatabase
 from dotenv import load_dotenv
 import os
 
@@ -17,7 +18,8 @@ app = Flask(__name__)
 llm = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 # Configurar la conexión a la base de datos MySQL
-retriever = SQLRetriever(database_uri=os.getenv('DATABASE_URI'))
+db = SQLDatabase.from_uri(os.getenv('DATABASE_URI'))
+db_chain = SQLDatabaseChain(llm=llm, database=db)
 
 # Prompt para el LLM
 general_prompt = PromptTemplate(
@@ -41,7 +43,7 @@ def get_github_info():
 tools = [
     Tool(
         name="database_search",
-        func=lambda _: retriever.retrieve("SELECT COUNT(*) FROM Reservations"),
+        func=lambda _: db_chain.run("SELECT COUNT(*) FROM Reservations"),
         description="Busca el número de entradas en la tabla de Reservas."
     ),
     Tool(
