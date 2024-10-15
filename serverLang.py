@@ -1,12 +1,16 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const agentOpenAi = require('../agents/agentOpenAi'); // Asegúrate de que esta ruta sea correcta y que el archivo exista
+const cors = require('cors');  // Importar CORS
 
 const app = express();
 const port = 4000;
 
 // Middleware para parsear JSON
 app.use(bodyParser.json());
+
+// Habilitar CORS para todas las solicitudes
+app.use(cors());
 
 // Ruta para recibir la solicitud del frontend
 app.post('/api/query', async (req, res) => {
