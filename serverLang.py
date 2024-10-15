@@ -1,83 +1,30 @@
-from flask import Flask, request, jsonify
-from langchain.llms import OpenAI
-from langchain.chains import LLMChain
-from langchain.prompts import PromptTemplate
-from langchain_experimental.sql import SQLDatabaseChain
-from langchain.agents import initialize_agent, Tool
-from langchain.utilities import SQLDatabase
-from dotenv import load_dotenv
-import os
+const express = require('express');
+const bodyParser = require('body-parser');
+const agentOpenAi = require('../agents/agentOpenAi'); // Asegúrate de que esta ruta sea correcta y que el archivo exista
 
-# Cargar variables de entorno
-load_dotenv()
+const app = express();
+const port = 4000;
 
-# Inicializar Flask
-app = Flask(__name__)
+// Middleware para parsear JSON
+app.use(bodyParser.json());
 
-# Configurar OpenAI LLM
-llm = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+// Ruta para recibir la solicitud del frontend
+app.post('/api/query', async (req, res) => {
+    const { query } = req.body;
 
-# Configurar la conexión a la base de datos MySQL
-db = SQLDatabase.from_uri(os.getenv('DATABASE_URI'))
-db_chain = SQLDatabaseChain(llm=llm, database=db)
+    try {
+        // Llama al agente para generar el prompt y obtener la respuesta del LLM
+        const prompt = await agentOpenAi.generatePrompt(query);
+        
+        // Responde con el prompt generado
+        res.json({ prompt });
+    } catch (error) {
+        console.error('Error en la generación del prompt:', error);
+        res.status(500).json({ error: 'Error al generar el prompt' });
+    }
+});
 
-# Prompt para el LLM
-general_prompt = PromptTemplate(
-    input_variables=["input"],
-    template="{input}"
-)
-general_chain = LLMChain(llm=llm, prompt=general_prompt)
-
-# Configurar acceso a GitHub (usando el token de GitHub)
-from github import Github
-github_token = os.getenv('GITHUB_TOKEN')
-g = Github(github_token)
-
-# Función para consultar GitHub
-def get_github_info():
-    user = g.get_user()
-    repos = [repo.name for repo in user.get_repos()]
-    return repos
-
-# Definir las herramientas que el agente puede usar
-tools = [
-    Tool(
-        name="database_search",
-        func=lambda _: db_chain.run("SELECT COUNT(*) FROM Reservations"),
-        description="Busca el número de entradas en la tabla de Reservas."
-    ),
-    Tool(
-        name="github_info",
-        func=lambda _: get_github_info(),
-        description="Devuelve la lista de repositorios del usuario de GitHub."
-    ),
-    Tool(
-        name="text_completion",
-        func=lambda input_text: general_chain.run(input=input_text),
-        description="Genera respuestas de texto general usando OpenAI."
-    )
-]
-
-# Inicializar el agente con las herramientas
-agent = initialize_agent(tools, llm)
-
-# Ruta principal para manejar solicitudes
-@app.route('/query', methods=['POST'])
-def query():
-    user_input = request.json['message']
-    
-    if "Reservas" in user_input:
-        # Consultar entradas en la tabla Reservations
-        result = agent.run("database_search")
-    elif "GitHub" in user_input:
-        # Consultar información de GitHub
-        result = agent.run("github_info")
-    else:
-        # Respuesta general usando el LLM
-        result = agent.run("text_completion", user_input)
-    
-    return jsonify({"response": result})
-
-# Ejecutar la aplicación Flask en el puerto 3001
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=3001)
+// Inicia el servidor
+app.listen(port, () => {
+    console.log(`Servidor escuchando en el puerto ${port}`);
+});
