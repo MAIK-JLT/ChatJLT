@@ -14,13 +14,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            // Asegúrate de que usamos HTTPS en la llamada
-            const response = await fetch('https://tu-servidor-correcto:4000/api/query', {  // URL correcta del serverLang.py
+            // Asegúrate de usar HTTPS si tu dominio lo tiene disponible.
+            const response = await fetch('https://tu-dominio.com/query', {  // Cambiar a HTTPS.
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ query: message, agent }),
+                body: JSON.stringify({ message, agent }),
             });
 
             // Procesar la respuesta correctamente
@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Actualizar la interfaz con la respuesta
             document.getElementById('messages').innerHTML += `<div>User: ${message}</div>`;
-            document.getElementById('messages').innerHTML += `<div>Assistant: ${data.prompt}</div>`;
+            document.getElementById('messages').innerHTML += `<div>Assistant: ${data.response}</div>`;
 
             // Limpiar el campo de entrada
             messageInput.value = '';
