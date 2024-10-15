@@ -1,0 +1,7 @@
+.DS_Store
+.Trash/
+.android/
+.vscode/
+node_modules/
+venv/
+
